@@ -1,0 +1,60 @@
+version: '3.8'
+services:
+  elasticsearch:
+    image: elasticsearch:8.11.1
+    container_name: elasticsearch
+    ports:
+      - '${ES_PORT}:9200'
+    environment:
+      - node.name=elasticsearch
+      - cluster.name=${CLUSTER_NAME}
+      - discovery.type=single-node
+      # 设置密码
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - bootstrap.memory_lock=true
+      # 启用  X-Pack 必须登录
+      - xpack.security.enabled=true
+      # 关闭 ssl
+      - xpack.security.http.ssl.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+      - xpack.license.self_generated.type=${LICENSE}
+    # 限制内存
+    mem_limit: ${ES_MEM_LIMIT}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+      - elasticsearch-plugins:/usr/share/elasticsearch/plugins
+    networks:
+      - my-network
+    restart: unless-stopped
+    # 健康检测：
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s http://localhost:9200 | grep -q 'missing authentication credentials'",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 120
+
+volumes:
+  elasticsearch-data:
+    driver: local
+  elasticsearch-plugins:
+    driver: local
+  # kibana-data:
+  #   driver: local
+  # metricbeat-data:
+  #   driver: local
+  # filebeat-data:
+  #   driver: local
+  # logstash-data:
+  #   driver: local
+
+networks:
+  my-network:
+    external: true
