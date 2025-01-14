@@ -1,60 +1,60 @@
-version: '3.8'
+version: '3'
+
 services:
   elasticsearch:
-    image: elasticsearch:8.11.1
+    image: elasticsearch:7.3.2
     container_name: elasticsearch
     ports:
-      - '${ES_PORT}:9200'
+      - "9200:9200"
+      - "9300:9300"
+    restart: always
     environment:
-      - node.name=elasticsearch
-      - cluster.name=${CLUSTER_NAME}
-      - discovery.type=single-node
-      # 设置密码
-      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
-      - bootstrap.memory_lock=true
-      # 启用  X-Pack 必须登录
-      - xpack.security.enabled=true
-      # 关闭 ssl
-      - xpack.security.http.ssl.enabled=false
-      - xpack.security.transport.ssl.enabled=false
-      - xpack.license.self_generated.type=${LICENSE}
-    # 限制内存
-    mem_limit: ${ES_MEM_LIMIT}
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
+      # 设置集群名称
+      cluster.name: elasticsearch
+      # 以单一节点模式启动
+      discovery.type: single-node
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
     volumes:
-      - elasticsearch-data:/usr/share/elasticsearch/data
-      - elasticsearch-plugins:/usr/share/elasticsearch/plugins
+      - ${PATH}/elasticsearch/plugins:/usr/share/elasticsearch/plugins
+      - ${PATH}/elasticsearch/data:/usr/share/elasticsearch/data
+      - ${PATH}/elasticsearch/logs:/usr/share/elasticsearch/logs
     networks:
-      - my-network
-    restart: unless-stopped
-    # 健康检测：
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "curl -s http://localhost:9200 | grep -q 'missing authentication credentials'",
-        ]
-      interval: 10s
-      timeout: 10s
-      retries: 120
+      - elk
 
-volumes:
-  elasticsearch-data:
-    driver: local
-  elasticsearch-plugins:
-    driver: local
-  # kibana-data:
-  #   driver: local
-  # metricbeat-data:
-  #   driver: local
-  # filebeat-data:
-  #   driver: local
-  # logstash-data:
-  #   driver: local
+  logstash:
+    image: logstash:7.3.2
+    container_name: logstash
+    restart: always
+    ports:
+      - "4560:4560"
+    volumes:
+      - ${PATH}/logstash/pipeline/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+      - ${PATH}/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
+    depends_on:
+      - elasticsearch
+    networks:
+      - elk
+
+  kibana:
+    image: kibana:7.3.2
+    container_name: kibana
+    restart: always
+    ports:
+      - "5601:5601"
+    depends_on:
+      # kibana在elasticsearch启动之后再启动
+      - elasticsearch
+    environment:
+      #设置系统语言文中文
+      I18N_LOCALE: zh-CN
+      # 访问域名
+      # SERVER_PUBLICBASEURL: https://kibana.cloud.com
+    volumes:
+      - ${PATH}/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml
+    networks:
+      - elk
 
 networks:
-  my-network:
-    external: true
+    elk:
+        name: elk
+        driver: bridge
