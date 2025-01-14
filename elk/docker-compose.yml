@@ -15,6 +15,7 @@ services:
       discovery.type: single-node
       ES_JAVA_OPTS: "-Xms512m -Xmx512m"
     volumes:
+      - ${PATH}/elasticsearch/config:/usr/share/elasticsearch/config
       - ${PATH}/elasticsearch/plugins:/usr/share/elasticsearch/plugins
       - ${PATH}/elasticsearch/data:/usr/share/elasticsearch/data
       - ${PATH}/elasticsearch/logs:/usr/share/elasticsearch/logs
@@ -32,25 +33,6 @@ services:
       - ${PATH}/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
     depends_on:
       - elasticsearch
-    networks:
-      - elk
-
-  kibana:
-    image: kibana:7.3.2
-    container_name: kibana
-    restart: always
-    ports:
-      - "5601:5601"
-    depends_on:
-      # kibana在elasticsearch启动之后再启动
-      - elasticsearch
-    environment:
-      #设置系统语言文中文
-      I18N_LOCALE: zh-CN
-      # 访问域名
-      # SERVER_PUBLICBASEURL: https://kibana.cloud.com
-    volumes:
-      - ${PATH}/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml
     networks:
       - elk
 
