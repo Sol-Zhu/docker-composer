@@ -33,7 +33,7 @@
 ################################################################
 
 ## GC configuration
--XX:+UseG1GC
+-XX:+UseConcMarkSweepGC
 -XX:CMSInitiatingOccupancyFraction=75
 -XX:+UseCMSInitiatingOccupancyOnly
 
