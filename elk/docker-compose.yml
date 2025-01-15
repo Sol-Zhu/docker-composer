@@ -8,17 +8,21 @@ services:
       - "9200:9200"
       - "9300:9300"
     restart: always
-    environment:
+    volumes:
+      - "./elasticsearch/data:/usr/share/elasticsearch/data"
+      - "./elasticsearch/logs:/usr/share/elasticsearch/logs"
+      - "./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml"
+      - "./elasticsearch/config/jvm.options:/usr/share/elasticsearch/config/jvm.options"
+    environment:                              # 设置环境变量,相当于docker run命令中的-e
       # 设置集群名称
       cluster.name: elasticsearch
       # 以单一节点模式启动
       discovery.type: single-node
       ES_JAVA_OPTS: "-Xms512m -Xmx512m"
-    volumes:
-      - ${PATH}/elasticsearch/config:/usr/share/elasticsearch/config
-      - ${PATH}/elasticsearch/plugins:/usr/share/elasticsearch/plugins
-      - ${PATH}/elasticsearch/data:/usr/share/elasticsearch/data
-      - ${PATH}/elasticsearch/logs:/usr/share/elasticsearch/logs
+      TZ: Asia/Shanghai
+      LANG: en_US.UTF-8
+      TAKE_FILE_OWNERSHIP: "true"  # 权限
+      ELASTIC_PASSWORD: "123456" # elastic账号密码
     networks:
       - elk
 
@@ -29,8 +33,10 @@ services:
     ports:
       - "4560:4560"
     volumes:
-      - ${PATH}/logstash/pipeline/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
-      - ${PATH}/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
+      - "./logstash/data:/usr/share/logstash/data"
+      - "./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml"
+      - "./logstash/config/logstash.conf:/usr/share/logstash/config/logstash.conf"
+      - "./logstash/config/jvm.option:/usr/share/logstash/config/jvm.option"
     depends_on:
       - elasticsearch
     networks:
