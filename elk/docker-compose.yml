@@ -30,6 +30,8 @@ services:
     image: kibana:7.3.2
     container_name: kibana
     restart: unless-stopped
+    environment:
+      - discovery.type=single-node
     volumes:
       - "./kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml"
     ports:
