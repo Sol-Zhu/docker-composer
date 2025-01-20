@@ -1,0 +1,75 @@
+version: '3'
+
+services:
+  elasticsearch:
+    image: elasticsearch:7.3.2
+    container_name: elasticsearch
+    restart: unless-stopped                   # 指定容器退出后的重启策略为始终重启，但是不考虑在Docker守护进程启动时就已经停止了的容器
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - "./elasticsearch/data:/usr/share/elasticsearch/data"
+      - "./elasticsearch/logs:/usr/share/elasticsearch/logs"
+      - "./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml"
+      - "./elasticsearch/config/jvm.options:/usr/share/elasticsearch/config/jvm.options"
+    environment:                              # 设置环境变量,相当于docker run命令中的-e
+      # 设置集群名称
+      cluster.name: elasticsearch
+      # 以单一节点模式启动
+      discovery.type: single-node
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      TZ: Asia/Shanghai
+      LANG: en_US.UTF-8
+      TAKE_FILE_OWNERSHIP: "true"  # 权限
+      ELASTIC_PASSWORD: "123456" # elastic账号密码
+    networks:
+      - elk
+
+  kibana:
+    image: kibana:7.3.2
+    container_name: kibana
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+    volumes:
+      - "./kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml"
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    links:
+      - elasticsearch
+    networks:
+      - elk
+
+  logstash:
+    image: logstash:7.3.2
+    container_name: logstash
+    restart: unless-stopped
+    environment:
+      LS_JAVA_OPTS: "-Xmx512m -Xms512m"
+    ports:
+      - "4560:4560"
+      - "5044:5044"
+      - "10001-10010:10001-10010"
+#       - "9600:9600"
+# #      - "10001-10010:10001-10010"
+#       - "1218:1218"
+#       - "20010:20010"
+#       - "20030:20030"
+#       - "20040:20040"
+    volumes:
+      - "./logstash/data:/usr/share/logstash/data"
+      - "./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml"
+      - "./logstash/config/logstash.conf:/usr/share/logstash/config/logstash.conf"
+      - "./logstash/config/jvm.option:/usr/share/logstash/config/jvm.option"
+    depends_on:
+      - elasticsearch
+    networks:
+      - elk
+
+networks:
+    elk:
+        name: elk
+        driver: bridge
